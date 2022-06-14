@@ -8,6 +8,19 @@ from orger.common import dt_heading
 
 from my.reddit.all import saved
 
+import re
+from slugify import slugify
+
+def org_slugify(text):
+    text = slugify(text)
+    text = re.sub(r'(\[[0-9]+%\])', '', text)
+    text = re.sub(r'(\[[0-9]+/[0-9]+\])', '', text)
+    text = re.sub(r'(\[#[ABC]\])', '', text)
+    text = re.sub(r"\[\[\(.+?\)\]\[", '', text)
+    text = re.sub(r"<[12][0-9]{3}-[0-9]{2}-[0-9]{2}\( .*?\)>", '', text)
+    text = re.sub(r"<[12][0-9]{3}-[0-9]{2}-[0-9]{2}\( .*?\)>""\[[12][0-9]{3}-[0-9]{2}-[0-9]{2}( .*?)\]", '', text)
+    return text
+
 
 class RedditView(Queue):
     def get_items(self) -> Queue.Results:
@@ -24,7 +37,14 @@ class RedditView(Queue):
                     s.created,
                     ('[#A] *DEAD*' if self.is_dead_url(s.url) else '') + link(title=s.title, url=s.url) + f' /r/{s.subreddit}'
                 ),
+                properties = {
+                    'ID': today.strftime('%F-%s-') + slugify(s.title),
+                    'CREATED': timestamp(t.created, inactive=True),
+                    'FC_CREATED': ts_utc0.strftime("%FT%TZ"),
+                    'FC_TYPE': 'topic'
+                },
                 body,
+                tags=['fc'],
             )
 
     # todo this could be generic, i.e. checking all urls?
